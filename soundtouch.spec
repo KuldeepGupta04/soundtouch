@@ -6,8 +6,6 @@ License:        LGPLv2+
 Group:          System Environment/Libraries
 URL:            http://www.surina.net/soundtouch/
 Source0:        http://www.surina.net/soundtouch/%{name}-%{version}.tar.gz
-Patch0:         soundtouch-1.4.0-x86_64-asm-broken.patch
-Patch1:         soundtouch-1.4.0-mmx-sse-compile-fix.patch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  gcc-c++
 
@@ -32,37 +30,29 @@ Requires: pkgconfig
 %description devel
 Libraries, include files, etc you can use to develop soundtouch applications.
 
-
 %prep
 %setup -q -n %{name}
-%patch0 -p1
-# soundtouch contains mmx / sse versions of the stretching algorithm.
-# to compile these -msse / -mmmx is needed. In x86 we make sure with this patch
-# the needed -msse / -mmmx only gets passed when compiling the relevant
-# object files so that these instructions do not get used in other object
-# files. On non x86 we simply sed the -msse2 out of the original makefiles
-%ifarch %{ix86}
-%patch1 -p1
-%else
-sed -i 's|-O3 -msse2||' source/SoundTouch/Makefile.*
-%endif
-sed -i 's|-O3||' source/SoundStretch/Makefile.*
-# set correct version for .so build
-%define ltversion %(echo %{version} | tr '.' ':')
-sed -i 's/-rpath $(libdir)/-rpath $(libdir) -version-number %{ltversion}/' \
-  source/SoundTouch/Makefile.in
-# cleanup a bit
-chmod -x README.html source/SoundTouch/RateTransposer.cpp
-sed -i 's|\r||g' README.html source/SoundTouch/RateTransposer.cpp
-
 
 %build
+# TODO: Global include.
+
+# Don't be afraid.
+CFLAGS_SUFFIX=
+
+%ifarch x86_64
+    export CFLAGS="-m64 -march=core2 -mcx16 -msahf -mno-movbe -mno-aes -mno-pclmul -mno-popcnt -mno-abm -mno-lwp -mno-fma -mno-fma4 -mno-xop -mno-bmi -mno-bmi2 -mno-tbm -mno-avx -mno-avx2 -mno-sse4.2 -msse4.1 -mno-lzcnt --param=l1-cache-size=32 --param=l1-cache-line-size=64 --param=l2-cache-size=3072 -mtune=native -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector"
+%else
+    export CFLAGS="-m32 -mtune=core2 -march=i686 -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector -fasynchronous-unwind-tables"
+%endif
+
+export CFLAGS="${CFLAGS} ${CFLAGS_SUFFIX}"
+export CXXFLAGS=${CFLAGS}
+./bootstrap
 %configure --disable-dependency-tracking --disable-static --enable-shared
 # Don't use rpath!   
 sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
 sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
 make %{?_smp_mflags}
-
 
 %install
 rm -rf $RPM_BUILD_ROOT
