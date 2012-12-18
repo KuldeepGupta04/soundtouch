@@ -34,19 +34,10 @@ Libraries, include files, etc you can use to develop soundtouch applications.
 %setup -q -n %{name}
 
 %build
-# TODO: Global include.
+CFLAGS_SUFFIX=""
+CFLAGS="-march=native -mtune=native -O3 ${CFLAGS_SUFFIX}"
+export CFLAGS CXXFLAGS=${CFLAGS}
 
-# Don't be afraid.
-CFLAGS_SUFFIX=
-
-%ifarch x86_64
-    export CFLAGS="-m64 -march=core2 -mcx16 -msahf -mno-movbe -mno-aes -mno-pclmul -mno-popcnt -mno-abm -mno-lwp -mno-fma -mno-fma4 -mno-xop -mno-bmi -mno-bmi2 -mno-tbm -mno-avx -mno-avx2 -mno-sse4.2 -msse4.1 -mno-lzcnt --param=l1-cache-size=32 --param=l1-cache-line-size=64 --param=l2-cache-size=3072 -mtune=native -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector"
-%else
-    export CFLAGS="-m32 -mtune=core2 -march=i686 -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector -fasynchronous-unwind-tables"
-%endif
-
-export CFLAGS="${CFLAGS} ${CFLAGS_SUFFIX}"
-export CXXFLAGS=${CFLAGS}
 ./bootstrap
 %configure --disable-dependency-tracking --disable-static --enable-shared
 # Don't use rpath!   
