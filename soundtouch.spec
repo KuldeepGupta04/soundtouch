@@ -1,6 +1,6 @@
 Name:           soundtouch
-Version:        1.6.0
-Release:        5%{?dist}
+Version:        1.7.0
+Release:        1%{?dist}
 Summary:        Audio Processing library for changing Tempo, Pitch and Playback Rates
 License:        LGPLv2+
 Group:          System Environment/Libraries
